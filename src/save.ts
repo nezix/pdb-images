@@ -5,9 +5,11 @@
  */
 
 import fs from 'fs';
+import { promises as fsPromises } from 'fs';
 
 import { HeadlessPluginContext } from 'molstar/lib/commonjs/mol-plugin/headless-plugin-context';
 import { RawImageData } from 'molstar/lib/commonjs/mol-plugin/util/headless-screenshot';
+import { GeometryControls } from 'molstar/lib/commonjs/extensions/geo-export/controls';
 
 import { Args } from './args';
 import { ImageSpec } from './captions/captions';
@@ -53,5 +55,17 @@ export function makeSaveFunction(plugin: HeadlessPluginContext, outDir: string, 
             }
             await saveRawToPng(image, Paths.imagePng(outDir, spec.filename, size));
         }
+    };
+}
+
+export function makeSaveUsdzFunction(plugin: HeadlessPluginContext, outDir: string) {
+    return async (spec: ImageSpec) => {
+        logger.info('Saving Usdz', spec.filename);
+        let controls = new GeometryControls(plugin);
+        controls.behaviors.params.value.format = "usdz";
+        const data = await controls.exportGeometry();
+        const path = Paths.meshUsdz(outDir, spec.filename);
+        const buffer = await data.blob.arrayBuffer();
+        await fsPromises.writeFile(path, Buffer.from(buffer));
     };
 }

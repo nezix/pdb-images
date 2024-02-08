@@ -25,7 +25,7 @@ import { fetchUrl, gunzipData, parseIntStrict } from './helpers/helpers';
 import { LogLevels, configureLogging, getLogger, oneLine } from './helpers/logging';
 import { ImageGenerator, ImageGeneratorOptions } from './image-generator';
 import * as Paths from './paths';
-import { makeSaveFunction } from './save';
+import { makeSaveFunction, makeSaveUsdzFunction } from './save';
 
 
 export const VERSION = '2.4.0';
@@ -111,6 +111,7 @@ export async function main(args: Args) {
         const plugin = await createHeadlessPlugin(args);
         try {
             const saveFunction = makeSaveFunction(plugin, args.output_dir, args, publicUrl);
+            const saveUsdzFunction = makeSaveUsdzFunction(plugin, args.output_dir);
             const options: ImageGeneratorOptions = {
                 showHydrogens: args.show_hydrogens,
                 showBranchedSticks: args.show_branched_sticks,
@@ -118,7 +119,7 @@ export async function main(args: Args) {
                 allowLowestQuality: args.allow_lowest_quality,
                 forceBfactor: args.force_bfactor,
             };
-            const imageGenerator = new ImageGenerator(plugin, saveFunction, api, args.type, args.view, options);
+            const imageGenerator = new ImageGenerator(plugin, saveFunction, saveUsdzFunction, api, args.type, args.view, options);
             await imageGenerator.processAll(args.entry_id, runtimeUrl, args.mode);
             if (tmpStructureFile) fs.rmSync(tmpStructureFile, { force: true });
         } finally {

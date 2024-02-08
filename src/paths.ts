@@ -37,6 +37,11 @@ export function imagePng(outDir: string | undefined, filenameStem: string, size:
     return join(outDir, `${filenameStem}_image-${size.width}x${size.height}.png`);
 }
 
+/** Return path for usdz mesh, like `out/1tqn_deposited_chain_mesh.usdz` */
+export function meshUsdz(outDir: string | undefined, filenameStem: string) {
+    return join(outDir, `${filenameStem}_mesh.usdz`);
+}
+
 
 /** Like `path.join` but allow `undefined` (and ignore it) */
 function join(...parts: (string | undefined)[]) {

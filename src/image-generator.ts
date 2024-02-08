@@ -58,6 +58,7 @@ export class ImageGenerator {
         public readonly plugin: PluginContext,
         /** Function that takes ImageSpec object and performs anything necessary to save the current plugin state (e.g. render image, save files...) */
         public readonly saveFunction: (spec: ImageSpec) => any,
+        public readonly saveUsdzFunction: (spec: ImageSpec) => any,
         /** API client for retrieving additional data */
         public readonly api: PDBeAPI,
         /** List of requested image types */
@@ -313,6 +314,7 @@ export class ImageGenerator {
                     const visuals = await components.makeLigEnvVisuals({ ...this.options, entityColors });
                     this.orientAndZoomAll(components.nodes.ligand!);
                     await this.saveViews('front', view => Captions.forLigandEnvironment({ ...context, view, ligandInfo: info }));
+                    await this.saveMesh(view => Captions.forLigandEnvironment({ ...context, view, ligandInfo: info }));
                 } else {
                     const assembly = context.assemblyId ? `assembly ${context.assemblyId}` : 'the deposited structure';
                     const ligandName = (info.compId && info.compId !== '') ? info.compId : info.description;
@@ -485,5 +487,9 @@ export class ImageGenerator {
             adjustCamera(this.plugin, s => changeCameraRotation(s, this.rotation));
             await this.saveFunction(spec(undefined));
         }
+    }
+    
+    private async saveMesh(spec: (view: undefined) => ImageSpec) {
+        await this.saveUsdzFunction(spec(undefined));
     }
 }
