@@ -15,7 +15,8 @@ enum RepresentationMode {
     BFACTOR = 6;
     VALIDATION = 7;
     PLDDT = 8;
-    ALL = 9;
+    MESH = 9;
+    ALL = 10;
 }
 
 message RequestArguments {
