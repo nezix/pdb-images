@@ -1,0 +1,54 @@
+﻿syntax = "proto3";
+
+package mara.pdb.meshservice;
+
+// import "google/api/annotations.proto";
+// import "protoc-gen-openapiv2/options/annotations.proto";
+
+enum RepresentationMode {
+    ENTRY = 0;
+    ASSEMBLY = 1;
+    ENTITY = 2;
+    DOMAIN = 3;
+    LIGAND = 4;
+    MODRES = 5;
+    BFACTOR = 6;
+    VALIDATION = 7;
+    PLDDT = 8;
+    ALL = 9;
+}
+
+message RequestArguments {
+    RepresentationMode repMode = 1;
+    bool showHydrogens = 2;
+    bool showBranchedSticks = 3;
+    bool ensembleShades = 4;
+    bool forceBfactor = 5;
+}
+
+message MeshRequest {
+    string pdbId = 1;
+    RequestArguments arguments = 2;
+}
+
+message Mesh {
+    string name = 1;
+    RepresentationMode repMode = 2;
+    bytes usdzData = 3; 
+}
+
+message MeshResult {
+    repeated Mesh meshes = 1;
+}
+
+service MeshService {
+    rpc GetMesh (MeshRequest) returns (MeshResult);
+}
+//service MeshService {
+//    rpc GetMesh (MeshRequest) returns (MeshResult) {
+//        option (google.api.http) = {
+//            post: "/v1/mesh"
+//            body: "*"
+//        };
+//    }
+//}

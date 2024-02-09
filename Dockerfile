@@ -22,6 +22,18 @@ RUN npm install -g .
 RUN mkdir -p /xvfb
 ENV XVFB_DIR="/xvfb"
 
-COPY docker ./docker
+#COPY docker ./docker
 
-ENTRYPOINT ["bash", "/pdb-images/docker/entrypoint.sh"]
+#ENTRYPOINT ["bash", "/pdb-images/docker/entrypoint.sh"]
+
+RUN apt install -y python3-pip
+RUN pip3 install grpcio-tools
+
+RUN mkdir -p /pdb-images/out
+
+COPY ["service/compile_protobuf.sh", "service/meshservice/meshservice.proto", "service/meshservice/mesh-service-server.py", "./"]
+RUN ./compile_protobuf.sh
+
+EXPOSE 46001
+
+ENTRYPOINT ["python3", "mesh-service-server.py"]
