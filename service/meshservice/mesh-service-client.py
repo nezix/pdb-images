@@ -39,6 +39,6 @@ class MeshServiceClient():
 
 
 client = MeshServiceClient()
-mesh_paths = client.GetMesh("1kx2", "ligand")
+mesh_paths = client.GetMesh("1x8x", "mesh")
 
 print(mesh_paths)
