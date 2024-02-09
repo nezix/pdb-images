@@ -144,10 +144,11 @@ export class ImageGenerator {
 
             if (mode === 'pdb') {
 
-                await visuals.applyToAll(vis => vis.setFaded('size-dependent'));
-                group.setGhost(false);
-                group.setCollapsed(ALLOW_COLLAPSED_NODES);
+                // await visuals.applyToAll(vis => vis.setFaded('size-dependent'));
+                // group.setGhost(false);
+                // group.setCollapsed(ALLOW_COLLAPSED_NODES);
                 group.setVisible(false);
+                visuals.nodes.polymerCartoon?.setVisible(true);
                 await this.processLigandsMesh(structure, context, colors.entities);
             }
         });
@@ -343,9 +344,9 @@ export class ImageGenerator {
             await using(structure.makeLigEnvComponents(info, ALLOW_COLLAPSED_NODES), async components => {
                 if (components.nodes.ligand) {
                     const visuals = await components.makeLigEnvVisuals({ ...this.options, entityColors });
+                    
                     this.orientAndZoomAll(components.nodes.ligand!);
                     await this.saveViews('front', view => Captions.forLigandEnvironment({ ...context, view, ligandInfo: info }));
-                    await this.saveMesh(view => Captions.forLigandEnvironment({ ...context, view, ligandInfo: info }));
                 } else {
                     const assembly = context.assemblyId ? `assembly ${context.assemblyId}` : 'the deposited structure';
                     const ligandName = (info.compId && info.compId !== '') ? info.compId : info.description;
@@ -365,7 +366,7 @@ export class ImageGenerator {
             await using(structure.makeLigEnvComponentsMesh(info, ALLOW_COLLAPSED_NODES), async components => {
                 if (components.nodes.ligand) {
                     const visuals = await components.makeLigEnvVisuals({ ...this.options, entityColors });
-                    this.orientAndZoomAll(components.nodes.ligand!);
+                    this.orientAndZoomAll(components.nodes.wideEnvironment!);
                     await this.saveMesh(view => Captions.forLigandEnvironment({ ...context, view, ligandInfo: info }));
                 } else {
                     const assembly = context.assemblyId ? `assembly ${context.assemblyId}` : 'the deposited structure';
