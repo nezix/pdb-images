@@ -33,8 +33,7 @@ message MeshRequest {
 
 message Mesh {
     string name = 1;
-    RepresentationMode repMode = 2;
-    bytes usdzData = 3; 
+    bytes usdzData = 2; 
 }
 
 message MeshResult {

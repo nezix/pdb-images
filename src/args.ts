@@ -13,13 +13,13 @@ export const Modes = ['pdb', 'alphafold'] as const;
 export type Mode = typeof Modes[number]
 
 /** Types of images that can be generated */
-export const ImageTypes = ['entry', 'assembly', 'entity', 'domain', 'ligand', 'modres', 'bfactor', 'validation', 'plddt', 'all'] as const;
+export const ImageTypes = ['entry', 'assembly', 'entity', 'domain', 'ligand', 'modres', 'bfactor', 'validation', 'plddt', 'mesh', 'all'] as const;
 /** Types of images that can be generated */
 export type ImageType = typeof ImageTypes[number]
 
 /** Types of images that can be generated for each mode */
 export const ImageTypesForModes = {
-    'pdb': ['entry', 'assembly', 'entity', 'domain', 'ligand', 'modres', 'bfactor', 'validation'],
+    'pdb': ['entry', 'assembly', 'entity', 'domain', 'ligand', 'modres', 'bfactor', 'validation', 'mesh'],
     'alphafold': ['plddt'],
 } satisfies { [mode in Mode]: ImageType[] };
 

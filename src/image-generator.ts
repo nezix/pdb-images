@@ -95,6 +95,10 @@ export class ImageGenerator {
                 await using(traj.makeModel(0), async rawModel => {
                     const model = await rawModel.makeCustomModelProperties(this.api);
 
+                    if (mode === 'pdb' && this.shouldRender('mesh')) {
+                        await this.processDepositedStructureForMesh(mode, entryId, model, traj);
+                        return;
+                    }
                     // Images from assembly structures
                     if (mode === 'pdb' && this.shouldRender('assembly', 'entity', 'modres')) {
                         const { assemblies, preferredAssemblyId } = await this.getAssemblyInfo(entryId, model.data!);
@@ -122,6 +126,33 @@ export class ImageGenerator {
         }
     }
 
+    private async processDepositedStructureForMesh(mode: 'pdb' | 'alphafold', entryId: string, model: ModelNode, traj: TrajectoryNode) {
+        logger.info('Processing deposited structure');
+        await using(model.makeStructure({ type: { name: 'model', params: {} } }), async structure => {
+            const group = await structure.makeGroup({ label: 'Whole Entry' }, { state: { isGhost: ALLOW_GHOST_NODES } });
+            const components = await group.makeStandardComponents(ALLOW_COLLAPSED_NODES);
+            const visuals = await components.makeStandardVisuals(this.options);
+            this.orientAndZoomAll(structure);
+            const nModels = traj.data?.frameCount ?? 1;
+            logger.info('Number of models:', nModels);
+            const context = {
+                entryId, assemblyId: undefined, isPreferredAssembly: false, nModels,
+                entityNames: await this.api.getEntityNames(entryId),
+                entityInfo: getEntityInfo(structure.data!)
+            };
+            const colors = assignEntityAndUnitColors(structure.data!);
+
+            if (mode === 'pdb') {
+
+                await visuals.applyToAll(vis => vis.setFaded('size-dependent'));
+                group.setGhost(false);
+                group.setCollapsed(ALLOW_COLLAPSED_NODES);
+                group.setVisible(false);
+                await this.processLigandsMesh(structure, context, colors.entities);
+            }
+        });
+    }
+    
     /** Create requested images which are generated from the deposited model */
     private async processDepositedStructure(mode: 'pdb' | 'alphafold', entryId: string, model: ModelNode, traj: TrajectoryNode) {
         logger.info('Processing deposited structure');
@@ -324,6 +355,27 @@ export class ImageGenerator {
         }
     }
 
+    /** Create meshes for ligands */
+    private async processLigandsMesh(structure: StructureNode, context: Captions.StructureContext, entityColors?: Color[]) {
+        const structData = structure.data!;
+        const ligandInfo = getLigandInfo(structData);
+        logger.debug(`Ligands (${Object.keys(ligandInfo).length}):`);
+        for (const lig in ligandInfo) logger.debug('   ', lig, oneLine(ligandInfo[lig]));
+        for (const info of Object.values(ligandInfo)) {
+            await using(structure.makeLigEnvComponentsMesh(info, ALLOW_COLLAPSED_NODES), async components => {
+                if (components.nodes.ligand) {
+                    const visuals = await components.makeLigEnvVisuals({ ...this.options, entityColors });
+                    this.orientAndZoomAll(components.nodes.ligand!);
+                    await this.saveMesh(view => Captions.forLigandEnvironment({ ...context, view, ligandInfo: info }));
+                } else {
+                    const assembly = context.assemblyId ? `assembly ${context.assemblyId}` : 'the deposited structure';
+                    const ligandName = (info.compId && info.compId !== '') ? info.compId : info.description;
+                    logger.error(`Skipping images for ligand ${ligandName} (not present in ${assembly})`);
+                }
+            });
+        }
+    }
+    
     /** Create images for SIFTS domains */
     private async processDomains(structure: StructureNode, context: Captions.StructureContext) {
         const domains = await this.api.getSiftsMappings(context.entryId);

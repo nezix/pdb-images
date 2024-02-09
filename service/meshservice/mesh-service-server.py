@@ -33,9 +33,6 @@ class MeshService(meshservice_pb2_grpc.MeshServiceServicer):
     def ToPdbImagesArg(self, mode: int):
         return RepresentationMode.keys()[mode].lower()
     
-    def extract_repmode_from_path(self, path: str):
-        # TODO
-        return RepresentationMode.ALL
     def GetMesh(self, request, context):
         arguments = request.arguments
         print("Run pdb-images for "+request.pdbId)
@@ -48,9 +45,8 @@ class MeshService(meshservice_pb2_grpc.MeshServiceServicer):
         for m_path in os.listdir(tempdir_out.name):
             if not m_path.endswith(".usdz"):
                 continue
-            repMode = self.extract_repmode_from_path(m_path)
             bytes = self.file_to_bytes(os.path.join(tempdir_out.name, m_path))
-            rendered_meshes.append(Mesh(name=m_path, usdzData=bytes, repMode=repMode))
+            rendered_meshes.append(Mesh(name=m_path, usdzData=bytes))
 
         tempdir_out.cleanup()
         return MeshResult(meshes=rendered_meshes)

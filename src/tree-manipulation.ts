@@ -290,6 +290,59 @@ export class StructureNode extends Node<PluginStateObject.Molecule.Structure> {
         return new LigandEnvironmentComponents({ ligand, environment, wideEnvironment, linkage });
     }
 
+    async makeLigEnvComponentsMesh(ligandInfo: LigandInfo, collapsed: boolean = false): Promise<LigandEnvironmentComponentsMesh> {
+        const options: Partial<StateTransform.Options> = { state: { isCollapsed: collapsed } };
+        const ligandLabel = ligandInfo.compId;
+        const envLabel = `Environment (${LIGAND_ENVIRONMENT_RADIUS} Å)`;
+
+        const ligExpr = MolScriptBuilder.struct.generator.atomGroups({
+            'chain-test': MolScriptBuilder.core.logic.and([
+                MolScriptBuilder.core.rel.eq([
+                    MolScriptBuilder.struct.atomProperty.macromolecular.label_asym_id(),
+                    ligandInfo.chainId]),
+                MolScriptBuilder.core.rel.eq([
+                    MolScriptBuilder.struct.atomProperty.macromolecular.label_entity_id(),
+                    ligandInfo.entityId]),
+            ])
+        });
+        const envExpr = MolScriptBuilder.struct.modifier.exceptBy({
+            0: MolScriptBuilder.struct.modifier.includeSurroundings({
+                0: ligExpr, 'radius': LIGAND_ENVIRONMENT_RADIUS, 'as-whole-residues': true,
+            }),
+            by: ligExpr,
+        });
+        const wideEnvExpr = MolScriptBuilder.struct.modifier.includeConnected({
+            0: envExpr, 'layer-count': LIGAND_WIDE_ENVIRONMENT_LAYERS, 'as-whole-residues': true,
+        });
+        const bondTest = MolScriptBuilder.core.flags.hasAny([
+            MolScriptBuilder.struct.bondProperty.flags(),
+            MolScriptBuilder.core.type.bitflags([BondType.Flag.Covalent | BondType.Flag.MetallicCoordination
+            | BondType.Flag.HydrogenBond | BondType.Flag.Disulfide | BondType.Flag.Aromatic | BondType.Flag.Computed])
+        ]); // taken from ligandPlusConnected (static component 'ligand')
+        const linkageExpr = MolScriptBuilder.struct.modifier.intersectBy({
+            0: MolScriptBuilder.struct.modifier.includeConnected({ 0: ligExpr, 'layer-count': 1, 'bond-test': bondTest }),
+            by: MolScriptBuilder.struct.modifier.includeConnected({ 0: envExpr, 'layer-count': 1, 'bond-test': bondTest }),
+        });
+
+        const ligand = await this.makeComponent({
+            type: { name: 'expression', params: ligExpr },
+            label: ligandLabel
+        }, options, `lig-${ligandLabel}`);
+        const environment = await this.makeComponent({
+            type: { name: 'expression', params: envExpr },
+            label: envLabel
+        }, options, `env-${ligandLabel}`);
+        const wideEnvironment = await this.makeComponent({
+            type: { name: 'expression', params: wideEnvExpr },
+            label: 'Wider environment'
+        }, options, `wide-${ligandLabel}`);
+        const linkage = await this.makeComponent({
+            type: { name: 'expression', params: linkageExpr },
+            label: 'Linkage'
+        }, options, `link-${ligandLabel}`);
+        return new LigandEnvironmentComponentsMesh({ ligand, environment, wideEnvironment, linkage });
+    }
+    
     /** Split a stucture into entities, create a component for each entity */
     async makeEntities(entityInfo?: EntityInfo): Promise<{ [entityId: string]: StructureNode | undefined }> {
         entityInfo ??= getEntityInfo(this.data!);
@@ -604,6 +657,27 @@ export class LigandEnvironmentComponents extends NodeCollection<LigEnvComponentT
         await linkageSticks?.setThinBallsAndSticks(ENVIRONMENT_STICK_SIZE_FACTOR);
         const wideEnvironmentCartoon = await this.nodes.wideEnvironment?.makeCartoon(options, ['wideEnvironmentCartoon']);
         await wideEnvironmentCartoon?.setFaded('extra');
+
+        return new LigandEnvironmentVisuals({
+            ligandSticks,
+            environmentSticks,
+            wideEnvironmentCartoon,
+            linkageSticks,
+        });
+    }
+}
+
+/** Collection of nodes for structure components for ligand visualization (ligand, environment, wider enviroment...) */
+export class LigandEnvironmentComponentsMesh extends NodeCollection<LigEnvComponentType, StructureNode> {
+    /** Create visuals like ligand balls-and-sticks, wider enviroment cartoon... */
+    async makeLigEnvVisuals(options: { showHydrogens?: boolean, allowLowestQuality?: boolean, entityColors?: Color[] }): Promise<LigandEnvironmentVisuals> {
+        const ligandSticks = await this.nodes.ligand?.makeBallsAndSticks(options, ['ligandSticks']);
+        await ligandSticks?.setColorByEntity({ colorList: options.entityColors ?? ENTITY_COLORS });
+        const environmentSticks = await this.nodes.environment?.makeBallsAndSticks(options, ['environmentSticks']);
+        await environmentSticks?.setThinBallsAndSticks(ENVIRONMENT_STICK_SIZE_FACTOR);
+        const linkageSticks = await this.nodes.linkage?.makeBallsAndSticks(options, ['linkageSticks']);
+        await linkageSticks?.setThinBallsAndSticks(ENVIRONMENT_STICK_SIZE_FACTOR);
+        const wideEnvironmentCartoon = await this.nodes.wideEnvironment?.makeCartoon(options, ['wideEnvironmentCartoon']);
 
         return new LigandEnvironmentVisuals({
             ligandSticks,
