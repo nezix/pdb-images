@@ -42,6 +42,13 @@ export function meshUsdz(outDir: string | undefined, filenameStem: string) {
     return join(outDir, `${filenameStem}_mesh.usdz`);
 }
 
+export function meshStl(outDir: string | undefined, filenameStem: string) {
+    return join(outDir, `${filenameStem}_mesh.stl`);
+}
+
+export function meshGlb(outDir: string | undefined, filenameStem: string) {
+    return join(outDir, `${filenameStem}_mesh.glb`);
+}
 
 /** Like `path.join` but allow `undefined` (and ignore it) */
 function join(...parts: (string | undefined)[]) {

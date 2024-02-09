@@ -69,3 +69,27 @@ export function makeSaveUsdzFunction(plugin: HeadlessPluginContext, outDir: stri
         await fsPromises.writeFile(path, Buffer.from(buffer));
     };
 }
+
+export function makeSaveStlFunction(plugin: HeadlessPluginContext, outDir: string) {
+    return async (spec: ImageSpec) => {
+        logger.info('Saving Stl', spec.filename);
+        let controls = new GeometryControls(plugin);
+        controls.behaviors.params.value.format = "stl";
+        const data = await controls.exportGeometry();
+        const path = Paths.meshStl(outDir, spec.filename);
+        const buffer = await data.blob.arrayBuffer();
+        await fsPromises.writeFile(path, Buffer.from(buffer));
+    };
+}
+
+export function makeSaveGlbFunction(plugin: HeadlessPluginContext, outDir: string) {
+    return async (spec: ImageSpec) => {
+        logger.info('Saving Glb', spec.filename);
+        let controls = new GeometryControls(plugin);
+        controls.behaviors.params.value.format = "glb";
+        const data = await controls.exportGeometry();
+        const path = Paths.meshGlb(outDir, spec.filename);
+        const buffer = await data.blob.arrayBuffer();
+        await fsPromises.writeFile(path, Buffer.from(buffer));
+    };
+}
