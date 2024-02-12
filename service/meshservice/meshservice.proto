@@ -1,9 +1,10 @@
 ﻿syntax = "proto3";
 
 package mara.pdb.meshservice;
+option go_package = "github.com/nanome/mara/meshservice/v1";
 
-// import "google/api/annotations.proto";
-// import "protoc-gen-openapiv2/options/annotations.proto";
+import "google/api/annotations.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
 
 enum RepresentationMode {
     ENTRY = 0;
@@ -42,13 +43,13 @@ message MeshResult {
 }
 
 service MeshService {
-    rpc GetMesh (MeshRequest) returns (MeshResult);
+    rpc GetMesh (MeshRequest) returns (MeshResult) {
+        // Client example: curl http://DOMAIN_NAME/api/v1/getmeshes/1kx2
+        option (google.api.http) = { get: "/v1/getmeshes/{pdbId}" };
+        option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+            summary: "Render usdz meshes from PDB Id"
+            description: "Gets a list of USDZ meshes from a PDB Id rendered by pdb-images"
+            tags: ["Meshes", "USDZ"]
+        };
+    }
 }
-//service MeshService {
-//    rpc GetMesh (MeshRequest) returns (MeshResult) {
-//        option (google.api.http) = {
-//            post: "/v1/mesh"
-//            body: "*"
-//        };
-//    }
-//}
