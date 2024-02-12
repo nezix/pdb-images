@@ -6,6 +6,7 @@
 
 import { ChainIndex, Model, Structure } from 'molstar/lib/commonjs/mol-model/structure';
 import { Entities } from 'molstar/lib/commonjs/mol-model/structure/model/properties/common';
+import { getMoleculeType, MoleculeType } from 'molstar/lib/commonjs/mol-model/structure/model/types';
 
 import { getLogger } from './logging';
 
@@ -16,7 +17,7 @@ const logger = getLogger(module);
 type EntityType = ReturnType<Entities['data']['type']['value']>
 
 /** Basic info about several entities, mapped by entityId */
-export type EntityInfo = { [entityId: string]: { description: string, type: EntityType, chains: ChainIndex[], index: number } }
+export type EntityInfo = { [entityId: string]: { description: string, type: EntityType, subType: string, chains: ChainIndex[], index: number } }
 
 /** Return basic info about entities in the structure, mapped by entityId */
 export function getEntityInfo(structure: Structure) {
@@ -27,9 +28,11 @@ export function getEntityInfo(structure: Structure) {
         const id = entities.data.id.value(i);
         const type = entities.data.type.value(i);
         const desc = entities.data.pdbx_description.value(i);
+        const subType = entities.subtype.value(i);
+        
         const description = desc.join(', ').replace(/\b(\d+), (\d+)\b/g, '$1,$2');
         // the regex fixes names like '1,2-ethanediol' (no space after comma, 1bvy) while keeping space in e.g. 'Endolysin, Beta-2 adrenergic receptor' (3sn6)
-        ent[id] = { description, type, chains: [], index: i };
+        ent[id] = { description, type, subType, chains: [], index: i };
     }
 
     for (const unit of structure.units ?? []) {
@@ -69,6 +72,8 @@ export interface LigandInfo {
     authChainId: string,
     /** Number of copies of this ligand in the deposited structure */
     nInstancesInEntry: number,
+    /** Entity subtype */
+    subType: string,
 }
 
 /** Return info about ligands (non-polymer entities) in the structure, mapped by compId */
@@ -88,6 +93,7 @@ export function getLigandInfo(structure: Structure) {
         const authChainId = hierarchy.chains.auth_asym_id.value(iChain);
         const iAtom = hierarchy.chainAtomSegments.offsets[iChain];
         const compId = hierarchy.atoms.label_comp_id.value(iAtom);
+        
         result[compId] = {
             compId: compId,
             description: info.description,
@@ -95,6 +101,7 @@ export function getLigandInfo(structure: Structure) {
             chainId: chainId,
             authChainId: authChainId,
             nInstancesInEntry: info.chains.length,
+            subType: info.subType,
         };
     }
     return result;

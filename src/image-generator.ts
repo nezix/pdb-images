@@ -363,6 +363,7 @@ export class ImageGenerator {
         logger.debug(`Ligands (${Object.keys(ligandInfo).length}):`);
         for (const lig in ligandInfo) logger.debug('   ', lig, oneLine(ligandInfo[lig]));
         for (const info of Object.values(ligandInfo)) {
+            if (info.subType === 'ion') continue;
             await using(structure.makeLigEnvComponentsMesh(info, ALLOW_COLLAPSED_NODES), async components => {
                 if (components.nodes.ligand) {
                     const visuals = await components.makeLigEnvVisuals({ ...this.options, entityColors });
