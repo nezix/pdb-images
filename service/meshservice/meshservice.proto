@@ -38,18 +38,14 @@ message MeshRequest {
     RequestArguments arguments = 2;
 }
 
-message Mesh {
+message MeshChunk {
     string name = 1;
-    bytes usdzData = 2; 
-}
-
-message MeshResult {
-    repeated Mesh meshes = 1;
+    bytes chunk = 2;
 }
 
 service MeshService {
-    rpc GetMesh (MeshRequestDefault) returns (MeshResult) {
-        // Client example: curl http://DOMAIN_NAME/api/v1/getmeshes/1kx2
+    rpc GetMesh (MeshRequestDefault) returns (stream MeshChunk) {
+        // Client example: curl http://DOMAIN_NAME/api/meshservice/getmeshes/1kx2
         option (google.api.http) = { get: "/meshservice/getmeshes/{pdbId}" };
         option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
             summary: "Render usdz meshes from PDB Id"

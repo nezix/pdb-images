@@ -1,14 +1,14 @@
 ﻿import grpc
 import os
 import tempfile
-from meshservice_pb2 import MeshRequestDefault, Mesh, RequestArguments, RepresentationMode
+from meshservice_pb2 import MeshRequestDefault, MeshChunk, RequestArguments, RepresentationMode
 from meshservice_pb2_grpc import MeshServiceStub
 
 class MeshServiceClient():
-    def __init__(self):
+    def __init__(self, address: str):
         options = [('grpc.max_send_message_length', 512 * 1024 * 1024),
                    ('grpc.max_receive_message_length', 512 * 1024 * 1024)]
-        self.channel = grpc.insecure_channel("localhost:46001", options=options)
+        self.channel = grpc.insecure_channel(address, options=options)
         self.client = MeshServiceStub(self.channel)
         self.temporary_directories = []
 
@@ -24,13 +24,22 @@ class MeshServiceClient():
         #                              showBranchedSticks=showBranchedSticks, ensembleShades=ensembleShades,
         #                              forceBfactor=forceBfactor)
 
-        response = self.client.GetMesh(MeshRequestDefault(pdbId=pdbId))
+        chunks = self.client.GetMesh(MeshRequestDefault(pdbId=pdbId))
         output_files = []
-        temp_dir = tempfile.mkdtemp()
+        temp_dir = tempfile.mkdtemp(prefix="usdz-meshes")
         self.temporary_directories.append(temp_dir)
-        for mesh in response.meshes:
-            self.write_to_file(os.path.join(temp_dir, mesh.name), mesh.usdzData)
-            output_files.append(temp_dir + mesh.name)
+        current_file = ""
+        received_bytes = bytes()
+        for c in chunks:
+            if c.name != current_file:
+                current_file = c.name
+                self.write_to_file(os.path.join(temp_dir, current_file), received_bytes)
+                received_bytes = bytes()
+                output_files.append(temp_dir + current_file)
+            received_bytes += c.chunk
+        if len(received_bytes):
+            self.write_to_file(os.path.join(temp_dir, current_file), received_bytes)
+        
         return output_files
 
     def Clean(self):
@@ -38,7 +47,7 @@ class MeshServiceClient():
             os.rmdir(d)
 
 
-client = MeshServiceClient()
+client = MeshServiceClient("localhost:46001")
 mesh_paths = client.GetMesh("1x8x")
 
 print(mesh_paths)

@@ -28,7 +28,7 @@ RUN pip3 install grpcio-tools
 RUN mkdir -p /pdb-images/protoc-gateway /pdb-images/protoc-openapi /pdb-images/proxy/gateway /pdb-images/proxy/app /pdb-images/openapi /pdb-images/bin /pdb-images/out
 
 COPY ["service/main.go", "./proxy/"]
-COPY ["service/compile_protobuf.sh", "service/meshservice/meshservice.proto", "service/meshservice/mesh-service-server.py", "./"]
+COPY ["service/run_servers.sh", "service/compile_protobuf.sh", "service/meshservice/meshservice.proto", "service/meshservice/mesh-service-server.py", "./"]
 COPY ["service/google/", "./google/"]
 COPY ["service/protoc-gen-openapiv2/", "./protoc-gen-openapiv2/"]
 
@@ -55,10 +55,10 @@ RUN export GOBIN="/pdb-images/bin"\
     && rm -rf protoc-gateway protoc-openapi bin
 
 WORKDIR /pdb-images/proxy
-RUN go mod init mara/mesh-service && go mod tidy
+RUN go mod init mara/mesh-service && go mod tidy && go build .
 
 EXPOSE 46001
 EXPOSE 8088
 
 WORKDIR /pdb-images
-#ENTRYPOINT ["python3", "mesh-service-server.py"]
+ENTRYPOINT ["bash", "run_servers.sh"]
