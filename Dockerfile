@@ -58,7 +58,7 @@ WORKDIR /pdb-images/proxy
 RUN go mod init mara/mesh-service && go mod tidy
 
 EXPOSE 46001
-#EXPOSE 8081
+EXPOSE 8088
 
 WORKDIR /pdb-images
 #ENTRYPOINT ["python3", "mesh-service-server.py"]

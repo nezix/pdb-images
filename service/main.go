@@ -1,6 +1,7 @@
 ﻿package main
 
 import (
+    "fmt"
 	"context"
 	"flag"
 	"net/http"
@@ -16,7 +17,7 @@ import (
 var (
 	// command-line options:
 	// gRPC server endpoint
-	grpcServerEndpoint = flag.String("grpc-server-endpoint", "localhost:9090", "gRPC server endpoint")
+	grpcServerEndpoint = flag.String("grpc-server-endpoint", "localhost:46001", "gRPC server endpoint")
 )
 
 func run() error {
@@ -24,6 +25,7 @@ func run() error {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
+    fmt.Println("Starting proxy server")
 	// Register gRPC server endpoint
 	// Note: Make sure the gRPC server is running properly and accessible
 	mux := runtime.NewServeMux()

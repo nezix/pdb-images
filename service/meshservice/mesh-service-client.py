@@ -1,7 +1,7 @@
 ﻿import grpc
 import os
 import tempfile
-from meshservice_pb2 import MeshRequest, Mesh, RequestArguments, RepresentationMode
+from meshservice_pb2 import MeshRequestDefault, Mesh, RequestArguments, RepresentationMode
 from meshservice_pb2_grpc import MeshServiceStub
 
 class MeshServiceClient():
@@ -16,15 +16,15 @@ class MeshServiceClient():
         with open(out_path, "wb") as output:
             output.write(payload)
 
-    def GetMesh(self, pdbId: str, representationMode: str, showHydrogens=False, showBranchedSticks=False,
+    def GetMesh(self, pdbId: str, representationMode: str = "mesh", showHydrogens=False, showBranchedSticks=False,
                 ensembleShades=False, forceBfactor=False):
 
-        repMode = RepresentationMode.keys().index(representationMode.upper())
-        arguments = RequestArguments(repMode=repMode, showHydrogens=showHydrogens,
-                                     showBranchedSticks=showBranchedSticks, ensembleShades=ensembleShades,
-                                     forceBfactor=forceBfactor)
+        # repMode = RepresentationMode.keys().index(representationMode.upper())
+        # arguments = RequestArguments(repMode=repMode, showHydrogens=showHydrogens,
+        #                              showBranchedSticks=showBranchedSticks, ensembleShades=ensembleShades,
+        #                              forceBfactor=forceBfactor)
 
-        response = self.client.GetMesh(MeshRequest(pdbId=pdbId, arguments=arguments))
+        response = self.client.GetMesh(MeshRequestDefault(pdbId=pdbId))
         output_files = []
         temp_dir = tempfile.mkdtemp()
         self.temporary_directories.append(temp_dir)
@@ -39,6 +39,6 @@ class MeshServiceClient():
 
 
 client = MeshServiceClient()
-mesh_paths = client.GetMesh("1x8x", "mesh")
+mesh_paths = client.GetMesh("1x8x")
 
 print(mesh_paths)
