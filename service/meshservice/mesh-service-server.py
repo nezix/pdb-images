@@ -14,7 +14,6 @@ class MeshService(meshservice_pb2_grpc.MeshServiceServicer):
         if arguments is None:
             arguments = RequestArguments(repMode=RepresentationMode.MESH, showHydrogens=False, showBranchedSticks=True,
                                          ensembleShades=False, forceBfactor=False)
-        print(arguments.repMode, self.ToPdbImagesArg(arguments.repMode))
         args = ["xvfb-run", "--auto-servernum", "pdb-images", pdbId, output_folder, "--type",
                 self.ToPdbImagesArg(arguments.repMode)]
         if arguments.showHydrogens:
@@ -43,9 +42,10 @@ class MeshService(meshservice_pb2_grpc.MeshServiceServicer):
             index += chunker_size
 
     def GetMesh(self, request, context):
+        # context.set_compression(grpc.Compression.Gzip)
         print("Run pdb-images for " + request.pdbId)
         tempdir_out = tempfile.TemporaryDirectory(prefix="pdb_images_output_")
-        ret = self.run_pdb_images_pdbid(request.pdbId, tempdir_out.name)
+        ret = self.run_pdb_images_pdbid(request.pdbId.lower(), tempdir_out.name)
         if ret:
             raise Exception(f"Something went wrong when executing pdb-images: {ret}")
 
