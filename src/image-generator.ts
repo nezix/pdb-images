@@ -359,23 +359,24 @@ export class ImageGenerator {
     /** Create meshes for ligands */
     private async processLigandsMesh(structure: StructureNode, context: Captions.StructureContext, entityColors?: Color[]) {
         const structData = structure.data!;
-        const ligandInfo = getLigandInfo(structData);
-        logger.debug(`Ligands (${Object.keys(ligandInfo).length}):`);
+        const ligandInfo = getLigandInfo(structData);        
         for (const lig in ligandInfo) logger.debug('   ', lig, oneLine(ligandInfo[lig]));
+        let ligCount = 0;
         for (const info of Object.values(ligandInfo)) {
             if (info.subType === 'ion') continue;
-            await using(structure.makeLigEnvComponentsMesh(info, ALLOW_COLLAPSED_NODES), async components => {
-                if (components.nodes.ligand) {
-                    const visuals = await components.makeLigEnvVisuals({ ...this.options, entityColors });
-                    this.orientAndZoomAll(components.nodes.wideEnvironment!);
-                    await this.saveMesh(view => Captions.forLigandEnvironment({ ...context, view, ligandInfo: info }));
-                } else {
-                    const assembly = context.assemblyId ? `assembly ${context.assemblyId}` : 'the deposited structure';
-                    const ligandName = (info.compId && info.compId !== '') ? info.compId : info.description;
-                    logger.error(`Skipping images for ligand ${ligandName} (not present in ${assembly})`);
-                }
-            });
+            let ligComponents = await structure.makeLigEnvComponentsMesh(info, ALLOW_COLLAPSED_NODES);
+            if (ligComponents.nodes.ligand) {
+                let generateWWideCartoon = ligCount == 0;
+                const visuals = await ligComponents.makeLigEnvVisuals({ ...this.options, entityColors, generateWWideCartoon });
+                this.orientAndZoomAll(ligComponents.nodes.wideEnvironment!);
+            } else {
+                const assembly = context.assemblyId ? `assembly ${context.assemblyId}` : 'the deposited structure';
+                const ligandName = (info.compId && info.compId !== '') ? info.compId : info.description;
+                logger.error(`Skipping images for ligand ${ligandName} (not present in ${assembly})`);
+            }
+            ligCount++;
         }
+        await this.saveMesh(view => Captions.forAllLigandsEnvironment({ ...context, view, ligandInfos: Object.values(ligandInfo) }));
     }
     
     /** Create images for SIFTS domains */

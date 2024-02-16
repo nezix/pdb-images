@@ -1,14 +1,14 @@
 import os
 import subprocess
 import tempfile
-import zipfile
-import io
 
 from fastapi import FastAPI, BackgroundTasks
-from fastapi.responses import Response
+from fastapi.responses import FileResponse
+from fastapi.middleware.gzip import GZipMiddleware
 
 to_clean = []
 app = FastAPI()
+app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 def clean():
     global to_clean
@@ -48,21 +48,14 @@ class PDBImagesMesh():
             raise Exception(f"Something went wrong when executing pdb-images: {ret}")
 
         mesh_files = [filename for filename in os.listdir(tempdir_out.name) if filename.endswith(".usdz")]
-        print(f"Done computing {len(mesh_files)} mesh(es)")
-        s = io.BytesIO()
-        zf = zipfile.ZipFile(s, "w", compression=zipfile.ZIP_DEFLATED)
-        zip_filename = f"{pdb_id}.zip"
+        if len(mesh_files) == 0:
+            raise Exception(f"Something went wrong when executing pdb-images, no usdz file written")
         
-        for filename in mesh_files:
-            zip_path = os.path.join(tempdir_out.name, filename)
-            zf.write(zip_path, arcname=filename)
-            
-        zf.close()
         to_clean.append(tempdir_out)
-        return Response(s.getvalue(), media_type="application/x-zip-compressed", headers={'Content-Disposition': f'attachment;filename={zip_filename}'})
+        return FileResponse(path=os.path.join(tempdir_out.name, mesh_files[0]), filename=mesh_files[0])
 
 
-@app.get("/getmeshes/{pdb_id}")
+@app.get("/getmesh/{pdb_id}")
 async def read_item(pdb_id: str, background_tasks: BackgroundTasks):
     background_tasks.add_task(clean)
     pdbimages = PDBImagesMesh()

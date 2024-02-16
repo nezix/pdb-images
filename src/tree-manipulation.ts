@@ -670,14 +670,19 @@ export class LigandEnvironmentComponents extends NodeCollection<LigEnvComponentT
 /** Collection of nodes for structure components for ligand visualization (ligand, environment, wider enviroment...) */
 export class LigandEnvironmentComponentsMesh extends NodeCollection<LigEnvComponentType, StructureNode> {
     /** Create visuals like ligand balls-and-sticks, wider enviroment cartoon... */
-    async makeLigEnvVisuals(options: { showHydrogens?: boolean, allowLowestQuality?: boolean, entityColors?: Color[] }): Promise<LigandEnvironmentVisuals> {
+    async makeLigEnvVisuals(options: { showHydrogens?: boolean, allowLowestQuality?: boolean, entityColors?: Color[], generateWWideCartoon?: boolean }): Promise<LigandEnvironmentVisuals> {
         const ligandSticks = await this.nodes.ligand?.makeBallsAndSticks(options, ['ligandSticks']);
         await ligandSticks?.setColorByEntity({ colorList: options.entityColors ?? ENTITY_COLORS });
         const environmentSticks = await this.nodes.environment?.makeBallsAndSticks(options, ['environmentSticks']);
         await environmentSticks?.setThinBallsAndSticks(ENVIRONMENT_STICK_SIZE_FACTOR);
         const linkageSticks = await this.nodes.linkage?.makeBallsAndSticks(options, ['linkageSticks']);
         await linkageSticks?.setThinBallsAndSticks(ENVIRONMENT_STICK_SIZE_FACTOR);
-        const wideEnvironmentCartoon = await this.nodes.wideEnvironment?.makeCartoon(options, ['wideEnvironmentCartoon']);
+        let wideEnvironmentCartoon:(VisualNode|undefined) = undefined;
+
+        if (options.generateWWideCartoon)
+        {
+            wideEnvironmentCartoon = await this.nodes.wideEnvironment?.makeCartoon(options, ['wideEnvironmentCartoon']);
+        }
 
         return new LigandEnvironmentVisuals({
             ligandSticks,

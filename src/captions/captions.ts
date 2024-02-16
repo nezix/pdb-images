@@ -218,6 +218,23 @@ export namespace Captions {
         };
     }
 
+    export function forAllLigandsEnvironment(context: StructureContext & { ligandInfos: LigandInfo[], view: ViewType }): ImageSpec {
+        const { entryId, ligandInfos, view } = context;
+                const description = new TextBuilder();
+        description.push('The binding environment for all ligands');
+        return {
+            filename: `${entryId}_all_ligands${viewSuffix(view)}`,
+            alt: new TextBuilder().push('The binding environment for all ligands of ', entryId, ',',
+                viewPhrase(view), '.').buildPlainText(),
+            description: description.buildText(),
+            clean_description: description.buildPlainText(),
+            _entry_id: entryId,
+            _view: view,
+            _section: ['entry', 'ligands'],
+            _extras: {},
+        };
+    }
+
     /** Create captions for `modres` image type. */
     export function forModifiedResidue(context: StructureContext & { modresInfo: ModifiedResidueInfo, view: ViewType }): ImageSpec {
         const { entryId, assemblyId, modresInfo, view } = context;
