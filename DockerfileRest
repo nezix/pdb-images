@@ -22,8 +22,8 @@ RUN npm install -g .
 RUN mkdir /xvfb
 ENV XVFB_DIR="/xvfb"
 
-RUN apt install -y python3-pip
-RUN pip3 install fastapi "uvicorn[standard]" 
+RUN apt-get update && apt install -y python3-pip 
+RUN pip3 install fastapi "uvicorn[standard]" python-multipart
 
 COPY ["service/meshservice/fastapi-meshservice.py", "./"]
 
