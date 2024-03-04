@@ -11,7 +11,6 @@ to_clean = []
 app = FastAPI()
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 
-
 def clean():
     global to_clean
     for temp in to_clean:
@@ -19,6 +18,12 @@ def clean():
         temp.cleanup()
     to_clean = []
 
+def pdb2cif(pdb_file: str):
+    path_without_ext = os.path.splitext(os.path.basename(pdb_file))[0]
+    cif_name = path_without_ext + ".cif"
+    cif_path = tempfile.NamedTemporaryFile(suffix=cif_name, delete=False).name
+    subprocess.run(["pdb2cif", pdb_file, cif_path])
+    return cif_path
 
 class PDBImagesMesh():
     def run_pdb_images_pdbid(self, pdbId: str, output_folder: str, arguments: dict = {}):
@@ -117,14 +122,23 @@ async def getmesh_pdbid(pdb_id: str, background_tasks: BackgroundTasks):
 
 
 @app.post("/getmesh-file/")
-async def getmesh_file(cif_file: UploadFile = File(...),
+async def getmesh_file(file: UploadFile = File(...),
                        background_tasks: BackgroundTasks = BackgroundTasks()):
+    if file.filename.endswith(".pdb"):
+        pdb_path = tempfile.NamedTemporaryFile(suffix=file.filename, delete=False).name
+        with open(pdb_path, "wb") as f:
+            shutil.copyfileobj(file.file, f)
+        cif_path = pdb2cif(pdb_path)
+        os.remove(pdb_path)
+    else:
+        exts = [".cif", ".bcif", ".cif.gz", ".bcif.gz"]
+        if not any(file.filename.endswith(s) for s in exts):
+            raise Exception(f"Only {exts} file extensions are accepted")
+    
+        cif_path = tempfile.NamedTemporaryFile(suffix=file.filename, delete=False).name
+        with open(cif_path, "wb") as f:
+            shutil.copyfileobj(file.file, f)
+    
     background_tasks.add_task(clean)
-    exts = [".cif", ".bcif", ".cif.gz", ".bcif.gz"]
-    if not any(cif_file.filename.endswith(s) for s in exts):
-        raise Exception(f"Only {exts} file extensions are accepted")
-    cif_path = "/tmp/" + cif_file.filename
-    with open(cif_path, "wb") as f:
-        shutil.copyfileobj(cif_file.file, f)
     pdbimages = PDBImagesMesh()
     return await pdbimages.GetMeshLocal(cif_path)
