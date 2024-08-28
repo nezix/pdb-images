@@ -23,7 +23,7 @@ RUN mkdir /xvfb
 ENV XVFB_DIR="/xvfb"
 
 RUN apt-get update && apt install -y python3-pip 
-RUN pip3 install fastapi "uvicorn[standard]" python-multipart rkdit
+RUN pip3 install fastapi "uvicorn[standard]" python-multipart rdkit
 
 COPY ["service/meshservice/fastapi-meshservice.py", "./"]
 

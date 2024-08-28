@@ -124,7 +124,7 @@ def sdfToPdb(sdf_path: str):
         with Chem.PDBWriter(pdb_path) as pdb_writer:
             pdb_writer.write(mol)
         return pdb_path
-    return ""
+    raise Exception("Failed to convert SDF to PDB file")
 
 @app.get("/getmesh/{pdb_id}")
 async def getmesh_pdbid(pdb_id: str, background_tasks: BackgroundTasks):
@@ -137,6 +137,7 @@ async def getmesh_pdbid(pdb_id: str, background_tasks: BackgroundTasks):
 async def getmesh_file(file: UploadFile = File(...),
                        background_tasks: BackgroundTasks = BackgroundTasks()):
     supported_ext = [".pdb", ".sdf", ".cif", ".bcif", ".cif.gz", ".bcif.gz"]
+    print("-----------------------",file.filename)
     if not any(file.filename.endswith(s) for s in supported_ext):
         raise Exception(f"Only {supported_ext} file extensions are accepted")
     
@@ -156,6 +157,8 @@ async def getmesh_file(file: UploadFile = File(...),
             shutil.copyfileobj(file.file, f)
         pdb_path = sdfToPdb(sdf_path)
         file_path = pdb2cif(pdb_path)
+        os.remove(pdb_path)
+        os.remove(sdf_path)
         
     background_tasks.add_task(clean)
     pdbimages = PDBImagesMesh()

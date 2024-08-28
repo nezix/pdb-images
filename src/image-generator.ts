@@ -148,6 +148,10 @@ export class ImageGenerator {
                 // group.setGhost(false);
                 // group.setCollapsed(ALLOW_COLLAPSED_NODES);
                 group.setVisible(false);
+                if (visuals.nodes.polymerCartoon == null)
+                {
+                    group.setVisible(true);
+                }
                 visuals.nodes.polymerCartoon?.setVisible(true);
                 await this.processLigandsMesh(structure, context, colors.entities);
             }
@@ -368,7 +372,7 @@ export class ImageGenerator {
             if (ligComponents.nodes.ligand) {
                 let generateWWideCartoon = ligCount == 0;
                 const visuals = await ligComponents.makeLigEnvVisuals({ ...this.options, entityColors, generateWWideCartoon });
-                this.orientAndZoomAll(ligComponents.nodes.wideEnvironment!);
+                // this.orientAndZoomAll(ligComponents.nodes.wideEnvironment!);
             } else {
                 const assembly = context.assemblyId ? `assembly ${context.assemblyId}` : 'the deposited structure';
                 const ligandName = (info.compId && info.compId !== '') ? info.compId : info.description;
