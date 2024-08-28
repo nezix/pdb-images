@@ -2,6 +2,7 @@ import os
 import subprocess
 import tempfile
 import shutil
+from rdkit import Chem
 
 from fastapi import FastAPI, BackgroundTasks, UploadFile, File
 from fastapi.responses import FileResponse
@@ -113,6 +114,17 @@ class PDBImagesMesh():
         to_clean.append(tempdir_out)
         return FileResponse(path=os.path.join(tempdir_out.name, mesh_files[0]), filename=mesh_files[0])
 
+def sdfToPdb(sdf_path: str):
+    path_without_ext = os.path.splitext(os.path.basename(sdf_path))[0]
+    pdb_name = path_without_ext + ".pdb"
+    pdb_path = tempfile.NamedTemporaryFile(suffix=pdb_name, delete=False).name
+    for mol in Chem.SDMolSupplier(sdf_path):
+        if mol is None:
+            continue
+        with Chem.PDBWriter(pdb_path) as pdb_writer:
+            pdb_writer.write(mol)
+        return pdb_path
+    return ""
 
 @app.get("/getmesh/{pdb_id}")
 async def getmesh_pdbid(pdb_id: str, background_tasks: BackgroundTasks):
@@ -124,21 +136,27 @@ async def getmesh_pdbid(pdb_id: str, background_tasks: BackgroundTasks):
 @app.post("/getmesh-file/")
 async def getmesh_file(file: UploadFile = File(...),
                        background_tasks: BackgroundTasks = BackgroundTasks()):
+    supported_ext = [".pdb", ".sdf", ".cif", ".bcif", ".cif.gz", ".bcif.gz"]
+    if not any(file.filename.endswith(s) for s in supported_ext):
+        raise Exception(f"Only {supported_ext} file extensions are accepted")
+    
     if file.filename.endswith(".pdb"):
         pdb_path = tempfile.NamedTemporaryFile(suffix=file.filename, delete=False).name
         with open(pdb_path, "wb") as f:
             shutil.copyfileobj(file.file, f)
-        cif_path = pdb2cif(pdb_path)
+        file_path = pdb2cif(pdb_path)
         os.remove(pdb_path)
-    else:
-        exts = [".cif", ".bcif", ".cif.gz", ".bcif.gz"]
-        if not any(file.filename.endswith(s) for s in exts):
-            raise Exception(f"Only {exts} file extensions are accepted")
-    
-        cif_path = tempfile.NamedTemporaryFile(suffix=file.filename, delete=False).name
-        with open(cif_path, "wb") as f:
+    elif any(file.filename.endswith(ext) for ext in [".cif", ".bcif", ".cif.gz", ".bcif.gz"]):
+        file_path = tempfile.NamedTemporaryFile(suffix=file.filename, delete=False).name
+        with open(file_path, "wb") as f:
             shutil.copyfileobj(file.file, f)
-    
+    elif file.filename.endswith(".sdf"):
+        sdf_path = tempfile.NamedTemporaryFile(suffix=file.filename, delete=False).name
+        with open(sdf_path, "wb") as f:
+            shutil.copyfileobj(file.file, f)
+        pdb_path = sdfToPdb(sdf_path)
+        file_path = pdb2cif(pdb_path)
+        
     background_tasks.add_task(clean)
     pdbimages = PDBImagesMesh()
-    return await pdbimages.GetMeshLocal(cif_path)
+    return await pdbimages.GetMeshLocal(file_path)
